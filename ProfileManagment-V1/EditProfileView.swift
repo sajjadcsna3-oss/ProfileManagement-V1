@@ -7,8 +7,9 @@ struct EditProfileView: View {
     
     @State private var selectedItem: PhotosPickerItem?
     @State private var showCamera = false
-    @State private var showCropper = false
-    @State private var imageToCrop: UIImage?
+    
+    // ✅ Wrapper instead of UIImage
+    @State private var cropperItem: CropperItem?
 
     var body: some View {
         VStack(spacing: 20) {
@@ -131,25 +132,34 @@ struct EditProfileView: View {
                 }
             }
         }
+
+        // MARK: Gallery Selection
         .onChange(of: selectedItem) { _, newItem in
             viewModel.handleGallerySelection(newItem) { image in
-                imageToCrop = image
-                showCropper = true
+                cropperItem = CropperItem(image: image)
             }
         }
+
+        // MARK: Camera Sheet
         .sheet(isPresented: $showCamera) {
             CameraPicker { image in
-                imageToCrop = image
-                showCropper = true
+                cropperItem = CropperItem(image: image)
             }
         }
-        .sheet(isPresented: $showCropper) {
-            if let imageToCrop {
-                ImageCropperView(image: imageToCrop) { cropped in
-                    viewModel.image = cropped
-                    showCropper = false
-                }
+
+        // MARK: Cropper Sheet (Fixed)
+        .sheet(item: $cropperItem) { item in
+            ImageCropperView(image: item.image) { cropped in
+                viewModel.image = cropped
+                cropperItem = nil
             }
         }
     }
+}
+
+
+// ✅ Identifiable Wrapper
+struct CropperItem: Identifiable {
+    let id = UUID()
+    let image: UIImage
 }
